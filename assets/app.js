@@ -53,6 +53,7 @@
   const df = Object.create(null);
   docs.forEach((d) => Object.keys(d.tf).forEach((t) => { df[t] = (df[t] || 0) + 1; }));
   const N = docs.length;
+  const byId = new Map(docs.map((d) => [d.e.id, d]));
   const idf = (t) => {
     const n = df[t] || 0;
     return Math.log(1 + (N - n + 0.5) / (n + 0.5));
@@ -81,14 +82,37 @@
     return out;
   }
 
+  /* Score alone is not enough. "who won the 2018 world cup" scored well against
+     ASCII World, because "world" is a strong term there — one matched word out
+     of four. Coverage is the guard: most of the question has to be about the
+     entry, not one word of it. */
+  function coverage(questionToks, id) {
+    const d = byId.get(id);
+    if (!d) return 0;
+    const uniq = [...new Set(questionToks)];
+    if (!uniq.length) return 0;
+    const hit = uniq.filter((t) => d.tf[t]).length;
+    return hit / uniq.length;
+  }
+
   function retrieve(rawQuestion) {
-    // Pronouns are stripped as stopwords, which made "who is he" match nothing
-    // at all. Resolve them to a name that exists in the index.
-    const question = rawQuestion.replace(/\b(he|him|his|himself|vishnu v s|vishnu)\b/gi, 'vishnu');
-    let toks = expand(tokenize(question));
-    if (!toks.length) toks = ['vishnu'];
+    // Pronouns are stopwords, so "who is he" tokenises to nothing at all. Add
+    // the subject's name ONLY when the question has no content left — injecting
+    // it into a normal question makes "which hardware has he used" look like a
+    // question about him rather than about hardware.
+    const typed = tokenize(rawQuestion);          // what the user actually typed
+    let toks = expand(typed);
+    if (!toks.length) toks = expand(tokenize('vishnu'));
     const ranked = bm25(toks);
-    return { ranked, top: ranked[0], second: ranked[1] };
+    const top = ranked[0];
+    return {
+      ranked,
+      top,
+      second: ranked[1],
+      // coverage is measured on the typed words, not the expanded ones: otherwise
+      // adding five synonyms to a two-word question drops it below the floor
+      cov: top ? coverage(typed.length ? typed : toks, top.e.id) : 0,
+    };
   }
 
   const THRESHOLD = 2.8;
@@ -208,14 +232,15 @@
     const think = thinking();
     offerSuggestions([]);
 
-    const { top, second } = retrieve(question);
+    const { top, cov } = retrieve(question);
+    const confident = top && top.score >= THRESHOLD && cov >= 0.5;
 
     setTimeout(() => {
       think.remove();
-      if (!top || top.score < THRESHOLD) {
+      if (!confident) {
         // honest failure: say so, and point at the nearest thing it does know
         setState('shrug', 1400);
-        const clue = top && top.score > 1.2 ? ` Closest thing I have: ${top.e.title}.` : '';
+        const clue = top && top.score > 1.2 && cov >= 0.34 ? ` Closest thing I have: ${top.e.title}.` : '';
         const msg = addMsg(`I don't know that one.${clue} I only answer from what's on this site — try asking about a project, the stack, or how he works.`);
         msg.textContent = `I don't know that one.${clue} I only answer from what's on this site — try asking about a project, the stack, or how he works.`;
         offerSuggestions(SUGGESTIONS.sort(() => Math.random() - 0.5).slice(0, 3));
@@ -262,7 +287,11 @@
   });
 
   // expose for testing/tuning
-  window.__ask = (q) => { const r = retrieve(q); return { top: r.top && r.top.e.id, score: r.top && +r.top.score.toFixed(2), second: r.second && r.second.e.id, s2: r.second && +r.second.score.toFixed(2) }; };
+  window.__ask = (q) => {
+    const r = retrieve(q);
+    const ok = r.top && r.top.score >= THRESHOLD && r.cov >= 0.5;
+    return { top: r.top && r.top.e.id, score: r.top && +r.top.score.toFixed(2), cov: +r.cov.toFixed(2), answers: !!ok };
+  };
 
   document.documentElement.dataset.ready = '1';
 })();
