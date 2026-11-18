@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ask Buddy — a portfolio assistant with a face</title>
+<meta name="description" content="A RAG assistant for a portfolio that runs entirely in the browser, wearing a cartoon buddy instead of a chat bubble.">
+<meta name="theme-color" content="#080b10">
+<link rel="canonical" href="https://vishnuvsdevtech.github.io/ask-buddy/">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<main class="page">
+  <header class="head">
+    <div class="brand"><i></i><span>ASK BUDDY</span></div>
+    <span class="tag mono">prototype · runs in your browser</span>
+  </header>
+
+  <section class="hero">
+    <h1>An assistant with a <em>face</em></h1>
+    <p class="lede">
+      Not a chat widget in the corner. A small creature who lives on the page, knows what
+      Vishnu has built, and answers only from a fixed knowledge base — thirty-five entries,
+      no model weights, no server. Everything you type stays in this tab.
+    </p>
+    <ul class="facts mono">
+      <li>35 knowledge entries</li><li>BM25 retrieval</li><li>0 network calls</li><li>0 rupees</li>
+    </ul>
+  </section>
+
+  <section class="try">
+    <span class="mono">try</span>
+    <div class="chips" id="tryChips"></div>
+  </section>
+
+  <p class="note">
+    The buddy is the interface: it blinks, watches your cursor, thinks visibly, and shrugs
+    when it does not know something. Retrieval is lexical scoring over hand-written facts, so
+    it cannot invent a metric — the failure mode is "I don't know", which is the one you want.
+  </p>
+</main>
+
+<!-- ===================== the buddy ===================== -->
+<div class="companion" id="companion" data-state="idle">
+  <div class="bubble" id="bubble" aria-live="polite">
+    <div class="bubble-top">
+      <span class="who mono" id="who">BUDDY</span>
+      <button class="x" id="collapse" aria-label="close">✕</button>
+    </div>
+    <div class="thread" id="thread"></div>
+    <div class="suggests" id="suggests"></div>
+    <form class="ask" id="askForm">
+      <input id="askInput" type="text" placeholder="ask about a project, his stack, a decision…" autocomplete="off" />
+      <button type="submit" aria-label="send">→</button>
+    </form>
+  </div>
+
+  <button class="creature" id="creature" aria-label="Open the buddy">
+    <svg viewBox="0 0 220 240" class="b-svg" aria-hidden="true">
+      <defs>
+        <radialGradient id="shellG" cx="38%" cy="26%" r="82%">
+          <stop offset="0%" stop-color="#63e6cb"/>
+          <stop offset="55%" stop-color="#2fb7a6"/>
+          <stop offset="100%" stop-color="#1b8b80"/>
+        </radialGradient>
+        <radialGradient id="bellyG" cx="50%" cy="30%" r="70%">
+          <stop offset="0%" stop-color="rgba(255,255,255,.22)"/>
+          <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+        </radialGradient>
+      </defs>
+
+      <ellipse class="b-shadow" cx="110" cy="226" rx="48" ry="9"/>
+
+      <g class="b-body">
+        <!-- antenna -->
+        <g class="b-antenna">
+          <path d="M110 66 C111 46 118 34 128 24" fill="none" stroke="rgba(120,200,190,.6)" stroke-width="3" stroke-linecap="round"/>
+          <circle class="b-tip" cx="129" cy="22" r="6.5"/>
+        </g>
+
+        <!-- body -->
+        <path class="b-shell" d="M110 56 C154 56 182 90 182 138 C182 182 152 212 110 212 C68 212 38 182 38 138 C38 90 66 56 110 56 Z"/>
+        <path class="b-belly" d="M110 84 C146 84 168 110 168 142 C168 176 144 198 110 198 C76 198 52 176 52 142 C52 110 74 84 110 84 Z"/>
+
+        <!-- eyes -->
+        <g class="b-eyes">
+          <ellipse class="b-eye" cx="88" cy="124" rx="17" ry="19"/>
+          <ellipse class="b-eye" cx="132" cy="124" rx="17" ry="19"/>
+          <g class="b-pupils">
+            <circle class="b-pupil" cx="90" cy="127" r="8.5"/>
+            <circle class="b-pupil" cx="134" cy="127" r="8.5"/>
+            <circle class="b-glint" cx="87" cy="122" r="3.4"/>
+            <circle class="b-glint" cx="131" cy="122" r="3.4"/>
+          </g>
+          <ellipse class="b-lid" cx="88" cy="124" rx="17" ry="19"/>
+          <ellipse class="b-lid" cx="132" cy="124" rx="17" ry="19"/>
+        </g>
+
+        <!-- mouth -->
+        <path class="b-mouth" d="M100 162 Q110 173 120 162"/>
+
+        <!-- cheeks -->
+        <ellipse class="b-blush" cx="66" cy="156" rx="9" ry="5.5"/>
+        <ellipse class="b-blush" cx="154" cy="156" rx="9" ry="5.5"/>
+      </g>
+
+      <g class="b-think">
+        <circle cx="82" cy="18" r="4.5"/><circle cx="110" cy="9" r="5.5"/><circle cx="138" cy="18" r="4.5"/>
+      </g>
+      <g class="b-spark">
+        <path d="M36 84 l3.5 9 l9 3.5 l-9 3.5 l-3.5 9 l-3.5 -9 l-9 -3.5 l9 -3.5 z"/>
+        <path d="M186 108 l3 7.5 l7.5 3 l-7.5 3 l-3 7.5 l-3 -7.5 l-7.5 -3 l7.5 -3 z"/>
+      </g>
+    </svg>
+  </button>
+</div>
+
+<script src="assets/kb.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
